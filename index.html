@@ -27,11 +27,11 @@
     <button id="startBtn">开始</button>
   </div>
 
-  <!-- 第二页至第五页：题目页 -->
+  <!-- 第二页至第五页：题目页（动态加载题目） -->
   <div id="quizPage" class="page">
     <h2 id="questionTitle">题目</h2>
     <div id="options">
-      <!-- 选项按钮会动态生成 -->
+      <!-- 选项按钮将动态生成 -->
     </div>
     <div id="feedback" style="font-size:2em;margin:10px 0;"></div>
     <button id="nextBtn" style="display:none;">下一题</button>
@@ -51,7 +51,7 @@
   </div>
 
   <script>
-    // 模拟题目数据
+    // 模拟题目数据（可根据需要扩展）
     const questions = [
       {
         title: "题目1：JavaScript 是什么？",
@@ -79,7 +79,7 @@
     let score = 0;
     let username = "";
 
-    // 页面元素
+    // 获取页面元素
     const page1 = document.getElementById('page1');
     const quizPage = document.getElementById('quizPage');
     const resultPage = document.getElementById('resultPage');
@@ -95,13 +95,13 @@
     const leaderboardList = document.getElementById('leaderboardList');
     const closeLeaderboard = document.getElementById('closeLeaderboard');
 
-    // 页面显示控制函数
+    // 控制页面显示
     function showPage(page) {
       [page1, quizPage, resultPage].forEach(p => p.classList.remove('active'));
       page.classList.add('active');
     }
 
-    // 开始答题按钮事件
+    // 开始答题
     startBtn.addEventListener('click', () => {
       username = usernameInput.value.trim();
       if (!username) {
@@ -114,13 +114,13 @@
       loadQuestion();
     });
 
-    // 加载当前题目
+    // 加载题目
     function loadQuestion() {
       feedbackDiv.textContent = "";
       nextBtn.style.display = "none";
       const question = questions[currentQuestionIndex];
       questionTitle.textContent = question.title;
-      optionsDiv.innerHTML = ""; // 清空上一次的选项
+      optionsDiv.innerHTML = ""; // 清空上次的选项
 
       question.options.forEach((option, index) => {
         const btn = document.createElement('button');
@@ -141,7 +141,7 @@
       });
     }
 
-    // 下一题按钮事件
+    // 点击“下一题”按钮
     nextBtn.addEventListener('click', () => {
       currentQuestionIndex++;
       if (currentQuestionIndex < questions.length) {
@@ -151,10 +151,10 @@
       }
     });
 
-    // 完成答题：显示成绩并上传到服务器
+    // 答题结束，显示成绩并上传到后端
     function finishQuiz() {
       scoreDisplay.textContent = `正确题数：${score}`;
-      // 使用 POST 请求将成绩发送到服务器
+      // 使用 POST 请求将成绩上传到后端（请确保后端服务已启动）
       fetch('http://localhost:3000/api/score', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -170,7 +170,7 @@
       showPage(resultPage);
     }
 
-    // 排行榜按钮事件：从服务器获取排行榜数据
+    // 点击“排行榜”按钮，从后端获取数据并显示
     leaderboardBtn.addEventListener('click', () => {
       fetch('http://localhost:3000/api/leaderboard')
         .then(response => response.json())
@@ -178,7 +178,7 @@
           leaderboardList.innerHTML = "";
           data.forEach(item => {
             const li = document.createElement('li');
-            li.textContent = `${item.name}: ${item.score} 分`;
+            li.textContent = `${item.name}: ${item.score} 分 (${new Date(item.created_at).toLocaleString()})`;
             leaderboardList.appendChild(li);
           });
           leaderboardDiv.style.display = "block";
