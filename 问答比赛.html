@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>问答比赛</title>
+</head>
+<body>
+    <h1>请输入你的名字</h1>
+    <input type="text" id="username" placeholder="输入你的名字">
+    <button onclick="startGame()">开始</button>
+
+    <div id="question-container" style="display:none;">
+        <h2 id="question-text"></h2>
+        <div id="options"></div>
+        <p id="result"></p>
+        <button onclick="nextQuestion()">下一题</button>
+    </div>
+
+    <div id="score-container" style="display:none;">
+        <h2>游戏结束！你的得分：<span id="final-score"></span></h2>
+        <button onclick="submitScore()">提交分数</button>
+    </div>
+
+    <div id="leaderboard-container" style="display:none;">
+        <h2>排行榜</h2>
+        <ul id="leaderboard"></ul>
+    </div>
+
+    <script>
+        let username = "";
+        let score = 0;
+        let currentQuestion = 0;
+        const questions = [
+            { question: "1+1=?", options: ["1", "2", "3", "4"], answer: "2" },
+            { question: "2+2=?", options: ["2", "3", "4", "5"], answer: "4" }
+        ];
+
+        function startGame() {
+            username = document.getElementById("username").value;
+            if (!username) return alert("请输入名字！");
+            document.getElementById("question-container").style.display = "block";
+            showQuestion();
+        }
+
+        function showQuestion() {
+            if (currentQuestion >= questions.length) {
+                document.getElementById("score-container").style.display = "block";
+                document.getElementById("final-score").innerText = score;
+                return;
+            }
+            document.getElementById("question-text").innerText = questions[currentQuestion].question;
+            let optionsHtml = "";
+            questions[currentQuestion].options.forEach(option => {
+                optionsHtml += `<button onclick="checkAnswer('${option}')">${option}</button>`;
+            });
+            document.getElementById("options").innerHTML = optionsHtml;
+        }
+
+        function checkAnswer(answer) {
+            if (answer === questions[currentQuestion].answer) {
+                score++;
+                document.getElementById("result").innerText = "✅ 正确!";
+            } else {
+                document.getElementById("result").innerText = "❌ 错误!";
+            }
+        }
+
+        function nextQuestion() {
+            currentQuestion++;
+            showQuestion();
+        }
+
+        function submitScore() {
+            fetch('http://localhost:3001/submit', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name: username, score })
+            }).then(() => showLeaderboard());
+        }
+
+        function showLeaderboard() {
+            fetch('http://localhost:3001/leaderboard')
+                .then(res => res.json())
+                .then(data => {
+                    let leaderboardHtml = "";
+                    data.forEach(entry => {
+                        leaderboardHtml += `<li>${entry.name}: ${entry.score}</li>`;
+                    });
+                    document.getElementById("leaderboard").innerHTML = leaderboardHtml;
+                    document.getElementById("leaderboard-container").style.display = "block";
+                });
+        }
+    </script>
+</body>
+</html>
