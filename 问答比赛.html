@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>问答比赛</title>
+  <style>
+    .page { display: none; }
+    .active { display: block; }
+    .leaderboard-btn {
+      position: fixed;
+      right: 20px;
+      bottom: 20px;
+      padding: 10px 15px;
+      background: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+  </style>
+</head>
+<body>
+  <!-- 第一页：输入用户名 -->
+  <div id="page1" class="page active">
+    <h2>请输入您的名字</h2>
+    <input type="text" id="username" placeholder="您的名字">
+    <button id="startBtn">开始</button>
+  </div>
+
+  <!-- 第二页至第五页：题目页（这里使用一个页面来动态加载不同题目） -->
+  <div id="quizPage" class="page">
+    <h2 id="questionTitle">题目</h2>
+    <div id="options">
+      <!-- 选项按钮会动态生成 -->
+    </div>
+    <div id="feedback" style="font-size:2em;margin:10px 0;"></div>
+    <button id="nextBtn" style="display:none;">下一题</button>
+  </div>
+
+  <!-- 第六页：结果页 -->
+  <div id="resultPage" class="page">
+    <h2>你的成绩</h2>
+    <p id="scoreDisplay">正确题数：0</p>
+    <button id="leaderboardBtn" class="leaderboard-btn">排行榜</button>
+    <!-- 排行榜区域 -->
+    <div id="leaderboard" style="display:none; border:1px solid #ccc; padding:10px; margin-top:20px;">
+      <h3>排行榜</h3>
+      <ul id="leaderboardList"></ul>
+      <button id="closeLeaderboard">关闭</button>
+    </div>
+  </div>
+
+  <script>
+    // 模拟题目数据
+    const questions = [
+      {
+        title: "题目1：JavaScript 是什么？",
+        options: ["编程语言", "咖啡", "操作系统", "数据库"],
+        answer: 0  // 下标为 0 的选项是正确答案
+      },
+      {
+        title: "题目2：HTML 的全称是什么？",
+        options: ["HyperText Markup Language", "HighText Machine Language", "HyperText Machine Language", "None"],
+        answer: 0
+      },
+      {
+        title: "题目3：CSS 用于？",
+        options: ["布局和样式", "数据库操作", "后端逻辑", "机器学习"],
+        answer: 0
+      },
+      {
+        title: "题目4：哪一个不是前端技术？",
+        options: ["HTML", "CSS", "JavaScript", "Python"],
+        answer: 3
+      }
+    ];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let username = "";
+
+    // 页面元素
+    const page1 = document.getElementById('page1');
+    const quizPage = document.getElementById('quizPage');
+    const resultPage = document.getElementById('resultPage');
+    const usernameInput = document.getElementById('username');
+    const startBtn = document.getElementById('startBtn');
+    const questionTitle = document.getElementById('questionTitle');
+    const optionsDiv = document.getElementById('options');
+    const feedbackDiv = document.getElementById('feedback');
+    const nextBtn = document.getElementById('nextBtn');
+    const scoreDisplay = document.getElementById('scoreDisplay');
+    const leaderboardBtn = document.getElementById('leaderboardBtn');
+    const leaderboardDiv = document.getElementById('leaderboard');
+    const leaderboardList = document.getElementById('leaderboardList');
+    const closeLeaderboard = document.getElementById('closeLeaderboard');
+
+    // 工具函数：从 localStorage 获取排行榜数据
+    function getLeaderboardData() {
+      return JSON.parse(localStorage.getItem('leaderboardData')) || [];
+    }
+    // 工具函数：保存排行榜数据到 localStorage
+    function saveLeaderboardData(data) {
+      localStorage.setItem('leaderboardData', JSON.stringify(data));
+    }
+
+    // 显示页面函数
+    function showPage(page) {
+      [page1, quizPage, resultPage].forEach(p => p.classList.remove('active'));
+      page.classList.add('active');
+    }
+
+    // 开始按钮事件
+    startBtn.addEventListener('click', () => {
+      username = usernameInput.value.trim();
+      if (!username) {
+        alert("请输入名字！");
+        return;
+      }
+      currentQuestionIndex = 0;
+      score = 0;
+      showPage(quizPage);
+      loadQuestion();
+    });
+
+    // 加载题目
+    function loadQuestion() {
+      feedbackDiv.textContent = "";
+      nextBtn.style.display = "none";
+      const question = questions[currentQuestionIndex];
+      questionTitle.textContent = question.title;
+      optionsDiv.innerHTML = ""; // 清空上次选项
+
+      question.options.forEach((option, index) => {
+        const btn = document.createElement('button');
+        btn.textContent = option;
+        btn.style.margin = "5px";
+        btn.addEventListener('click', () => {
+          // 禁止重复点击
+          Array.from(optionsDiv.children).forEach(b => b.disabled = true);
+          if (index === question.answer) {
+            feedbackDiv.textContent = "✅";
+            score++;
+          } else {
+            feedbackDiv.textContent = "❌";
+          }
+          nextBtn.style.display = "inline-block";
+        });
+        optionsDiv.appendChild(btn);
+      });
+    }
+
+    // 下一题按钮事件
+    nextBtn.addEventListener('click', () => {
+      currentQuestionIndex++;
+      if (currentQuestionIndex < questions.length) {
+        loadQuestion();
+      } else {
+        // 所有题目结束，跳转结果页
+        finishQuiz();
+      }
+    });
+
+    // 完成答题，显示结果，并保存成绩到 localStorage
+    function finishQuiz() {
+      scoreDisplay.textContent = `正确题数：${score}`;
+      // 从 localStorage 中获取排行榜数据
+      let leaderboardData = getLeaderboardData();
+      // 添加当前用户成绩
+      leaderboardData.push({ name: username, score });
+      // 保存回 localStorage
+      saveLeaderboardData(leaderboardData);
+      showPage(resultPage);
+    }
+
+    // 排行榜按钮事件（展示排行榜）
+    leaderboardBtn.addEventListener('click', () => {
+      // 从 localStorage 获取排行榜数据
+      let leaderboardData = getLeaderboardData();
+      // 清空排行榜列表
+      leaderboardList.innerHTML = "";
+      // 按分数从高到低排序
+      leaderboardData.sort((a, b) => b.score - a.score);
+      leaderboardData.forEach(item => {
+        const li = document.createElement('li');
+        li.textContent = `${item.name}: ${item.score} 分`;
+        leaderboardList.appendChild(li);
+      });
+      leaderboardDiv.style.display = "block";
+    });
+
+    // 关闭排行榜
+    closeLeaderboard.addEventListener('click', () => {
+      leaderboardDiv.style.display = "none";
+    });
+  </script>
+</body>
+</html>
